@@ -1,0 +1,17 @@
+[
+{
+  "directory": "/home/ben/LCCV-main/build",
+  "command": "/usr/bin/c++ -D_FILE_OFFSET_BITS=64 -Dliblccv_EXPORTS -I/home/ben/LCCV-main/include -I/usr/include/libcamera -isystem /usr/include/opencv4 -O3 -DNDEBUG -fPIC   -ftree-vectorize -Wall -Wextra -pedantic -Wno-unused-parameter -faligned-new -Werror -Wfatal-errors -Wno-psabi -std=gnu++17 -o CMakeFiles/liblccv.dir/src/lccv.cpp.o -c /home/ben/LCCV-main/src/lccv.cpp",
+  "file": "/home/ben/LCCV-main/src/lccv.cpp"
+},
+{
+  "directory": "/home/ben/LCCV-main/build",
+  "command": "/usr/bin/c++ -D_FILE_OFFSET_BITS=64 -Dliblccv_EXPORTS -I/home/ben/LCCV-main/include -I/usr/include/libcamera -isystem /usr/include/opencv4 -O3 -DNDEBUG -fPIC   -ftree-vectorize -Wall -Wextra -pedantic -Wno-unused-parameter -faligned-new -Werror -Wfatal-errors -Wno-psabi -std=gnu++17 -o CMakeFiles/liblccv.dir/src/libcamera_app.cpp.o -c /home/ben/LCCV-main/src/libcamera_app.cpp",
+  "file": "/home/ben/LCCV-main/src/libcamera_app.cpp"
+},
+{
+  "directory": "/home/ben/LCCV-main/build",
+  "command": "/usr/bin/c++ -D_FILE_OFFSET_BITS=64 -Dliblccv_EXPORTS -I/home/ben/LCCV-main/include -I/usr/include/libcamera -isystem /usr/include/opencv4 -O3 -DNDEBUG -fPIC   -ftree-vectorize -Wall -Wextra -pedantic -Wno-unused-parameter -faligned-new -Werror -Wfatal-errors -Wno-psabi -std=gnu++17 -o CMakeFiles/liblccv.dir/src/libcamera_app_options.cpp.o -c /home/ben/LCCV-main/src/libcamera_app_options.cpp",
+  "file": "/home/ben/LCCV-main/src/libcamera_app_options.cpp"
+}
+]

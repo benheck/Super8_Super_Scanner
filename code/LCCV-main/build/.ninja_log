@@ -1,0 +1,5 @@
+# ninja log v5
+2	2200	1742954528745588156	CMakeFiles/liblccv.dir/src/libcamera_app_options.cpp.o	172dd399b8a22f8c
+2	6900	1742954533433842700	CMakeFiles/liblccv.dir/src/libcamera_app.cpp.o	22bca82719a9f8c0
+1	7913	1742954534457897885	CMakeFiles/liblccv.dir/src/lccv.cpp.o	eec9df442b6ccc3a
+7913	8377	1742954534917922639	liblccv.so	fc143e603f0acd83
