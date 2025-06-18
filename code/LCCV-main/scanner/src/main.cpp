@@ -163,7 +163,7 @@ void onSprocketRightEdgeSliderChanged(int value) {// Function to handle sprocket
 }
 
 void onSprocketThresholdSliderChanged(int value) {// Function to handle sprocket threshold slider changes
-    sprocketThreshold = value + 200;
+    sprocketThreshold = value; // + 200;
 }
 
 void onLightOnButtonClicked() {
@@ -403,7 +403,7 @@ void drawPreviewModeStatus(cv::Mat &imageRef) {
 
     //drawText(imageRef, "Sprocket last error delta: " + std::to_string(frameDelta) + "%", 10, 120, 1.0); // Draw the sprocket error delta on the image
 
-    drawText(imageRef, "Takeup spool diameter: " + std::to_string(spool_diameter_mm) + " mm", 10, 240, 1.0); // Draw the takeup spool diameter on the image
+    drawText(imageRef, "Takeup spool diameter: " + std::to_string(spool_diameter_mm) + " mm", 10, 120, 1.0); // Draw the takeup spool diameter on the image
     //drawText(imageRef, "Takeup movement per frame: " + std::to_string(mmPerFrame) + " mm", 10, 280, 1.0); // Draw the takeup movement per frame on the image
     
     //drawText(imageRef, "Movement per Turn: " + std::to_string(movement_mm_turn) + " mm", 10, 320, 1.0); // Draw the movement per turn on the image
@@ -481,7 +481,7 @@ void updateVideoFeed() {
 
 }
 
-void updateSetupImage() {       //Draws on a frame buffer for SPEED
+void updateSetupImage() {       //Draws on a frame buffer for SPEED image4kin was captured in switchToSetupMode()
     
     image = image4kin.clone(); // Clone the 4k image to the image variable
 
@@ -565,18 +565,17 @@ void scanSingleFrame() {        //Like updateSetupImage but for scanning
     //Log frame time:
     auto startTime = std::chrono::high_resolution_clock::now(); // Start time for logging
 
-    // if (cam.capturePhoto(image) == false) {
-    //     std::cerr << "Error: Failed to capture burner photo!" << std::endl;
-    //     return; // Skip if the image capture fails
-    // }  
+    if (cam.capturePhoto(image) == false) {
+        std::cerr << "Error: Failed to capture real photo!" << std::endl;
+        return; // Skip if the image capture fails
+    }  
 
     if (cam.capturePhoto(image) == false) {
         std::cerr << "Error: Failed to capture real photo!" << std::endl;
         return; // Skip if the image capture fails
     }  
 
-    cv::flip(image, image, 1);      // Flip hori
-
+    cv::flip(image, image, 1);      // Flip horizontally
     cv::cvtColor(image, gray, cv::COLOR_BGR2GRAY);    // Convert the image to grayscale
     cv::threshold(gray, gray, sprocketThreshold, 255, cv::THRESH_BINARY); // Apply binary thresholding to isolate the white sprocket hole
 
@@ -662,6 +661,7 @@ void scanSingleFrame() {        //Like updateSetupImage but for scanning
             std::string formattedFrameNumber = oss.str();
 
             std::string filename = saveFolder.toStdString() + "/" + defaultFilename.toStdString() + "_" + formattedFrameNumber + ".png";
+            cv::imwrite(filename, croppedPhoto);
 
             // Set PNG compression level to 0 (no compression, fastest)
             // std::vector<int> compression_params;
@@ -670,7 +670,7 @@ void scanSingleFrame() {        //Like updateSetupImage but for scanning
 
             // cv::imwrite(filename, croppedPhoto, compression_params);
 
-            cv::imwrite(filename, croppedPhoto);
+            //cv::imwrite(filename, croppedPhoto);
 
             frameNumber++;
 
@@ -936,8 +936,8 @@ int main(int argc, char *argv[]) {
 
     //Column 0 row 4-5:
     QSlider *sprocketThresholdSliderWidget = new QSlider(Qt::Horizontal);
-    sprocketThresholdSliderWidget->setRange(0, 55); // Range for sprocket threshold slider
-    sprocketThresholdSliderWidget->setValue(sprocketThreshold - 200); // Set initial value
+    sprocketThresholdSliderWidget->setRange(0, 255); // Range for sprocket threshold slider
+    sprocketThresholdSliderWidget->setValue(sprocketThreshold); // Set initial value
     QObject::connect(sprocketThresholdSliderWidget, &QSlider::valueChanged, onSprocketThresholdSliderChanged);
 
     slidersGridLayout->addWidget(createLabel("Sprocket white threshold"), 4, 0); // Add a label for the left sprocket slider

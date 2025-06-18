@@ -50,40 +50,38 @@ void PiCamera::getImage(cv::Mat &frame, CompletedRequestPtr &payload) {
     static libcamera::Stream *cachedStream = nullptr;
     static unsigned int cachedWidth = 0, cachedHeight = 0, cachedStride = 0;
 
-    // Reset the cache if invalidated
     if (cacheInvalidated) {
-        std::cout << "Resetting cached stream and dimensions..." << std::endl;
         cachedStream = nullptr;
         cachedWidth = 0;
         cachedHeight = 0;
         cachedStride = 0;
-        cacheInvalidated = false; // Mark the cache as valid again
+        cacheInvalidated = false;
     }
 
-    // Cache the stream and its dimensions on the first call
     if (!cachedStream) {
-        std::cout << "Caching stream and dimensions..." << std::endl;
         cachedStream = app->StillStream();
         app->StreamDimensions(cachedStream, &cachedWidth, &cachedHeight, &cachedStride);
     }
 
-    // Print debug info
-    //std::cout << "----------------------Width: " << cachedWidth << ", Height: " << cachedHeight << ", Stride: " << cachedStride << std::endl;
-
-    // Map the memory for the current payload
     const std::vector<libcamera::Span<uint8_t>> mem = app->Mmap(payload->buffers[cachedStream]);
+    uint8_t *srcPtr = (uint8_t *)mem[0].data();
 
-    // Create the OpenCV matrix
     frame.create(cachedHeight, cachedWidth, CV_8UC3);
 
-    // Copy the data from the camera buffer to the OpenCV matrix
-    uint ls = cachedWidth * 3; // Line size in bytes
-    uint8_t *ptr = (uint8_t *)mem[0].data();
+    // Number of bytes per useful row (width * 3 bytes per pixel)
+    const size_t rowBytes = cachedWidth * 3;
 
-    for (unsigned int i = 0; i < cachedHeight; i++, ptr += cachedStride) {
-        memcpy(frame.ptr(i), ptr, ls);
+    if (cachedStride == rowBytes) {
+        // Single memcpy when no padding
+        memcpy(frame.data, srcPtr, cachedHeight * cachedStride);
+    } else {
+        // Copy row by row to skip padding bytes
+        for (unsigned int i = 0; i < cachedHeight; i++) {
+            memcpy(frame.ptr(i), srcPtr + i * cachedStride, rowBytes);
+        }
     }
 }
+
 
 bool PiCamera::startPhoto() {
     app->OpenCamera();
@@ -166,6 +164,7 @@ void PiCamera::stopVideo()
     //join thread
     void *status;
     int ret = pthread_join(videothread, &status);
+
     if(ret<0)
         std::cerr<<"Error joining thread"<<std::endl;
 

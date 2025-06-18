@@ -86,13 +86,16 @@ void LibcameraApp::ConfigureStill(unsigned int flags)
 	if (!configuration_)
 		throw std::runtime_error("failed to generate still capture configuration");
 
+	// This is the default for raw capture Sony IMX477 sensor
 	// Now we get to override any of the default settings from the options_->
+
 	if (flags & FLAG_STILL_BGR)
 		configuration_->at(0).pixelFormat = libcamera::formats::BGR888;
 	else if (flags & FLAG_STILL_RGB)
 		configuration_->at(0).pixelFormat = libcamera::formats::RGB888;
 	else
 		configuration_->at(0).pixelFormat = libcamera::formats::YUV420;
+
 	if ((flags & FLAG_STILL_BUFFER_MASK) == FLAG_STILL_DOUBLE_BUFFER)
 		configuration_->at(0).bufferCount = 2;
 	else if ((flags & FLAG_STILL_BUFFER_MASK) == FLAG_STILL_TRIPLE_BUFFER)
@@ -109,7 +112,8 @@ void LibcameraApp::ConfigureStill(unsigned int flags)
 		configuration_->at(1).size.width = configuration_->at(0).size.width;
 		configuration_->at(1).size.height = configuration_->at(0).size.height;
 	}
-	configuration_->at(1).bufferCount = configuration_->at(0).bufferCount;
+	
+	configuration_->at(0).bufferCount = configuration_->at(0).bufferCount;
 
 	configureDenoise(options_->denoise == "auto" ? "cdn_hq" : options_->denoise);
 	setupCapture();
