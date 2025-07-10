@@ -244,6 +244,9 @@ boost_headers_DIR:PATH=/usr/lib/aarch64-linux-gnu/cmake/boost_headers-1.74.0
 //The directory containing a CMake configuration file for boost_system.
 boost_system_DIR:PATH=/usr/lib/aarch64-linux-gnu/cmake/boost_system-1.74.0
 
+//The directory containing a CMake configuration file for nlohmann_json.
+nlohmann_json_DIR:PATH=/usr/share/cmake/nlohmann_json
+
 //Path to a library.
 pkgcfg_lib_LIBCAMERA_camera:FILEPATH=/usr/lib/aarch64-linux-gnu/libcamera.so
 
@@ -415,6 +418,8 @@ FIND_PACKAGE_MESSAGE_DETAILS_Boost:INTERNAL=[/usr/lib/aarch64-linux-gnu/cmake/Bo
 FIND_PACKAGE_MESSAGE_DETAILS_OpenCV:INTERNAL=[/usr][v4.6.0()]
 //Details about finding PkgConfig
 FIND_PACKAGE_MESSAGE_DETAILS_PkgConfig:INTERNAL=[/usr/bin/pkg-config][v1.8.1()]
+//Details about finding nlohmann_json
+FIND_PACKAGE_MESSAGE_DETAILS_nlohmann_json:INTERNAL=[/usr/share/cmake/nlohmann_json/nlohmann_jsonConfig.cmake][v3.11.2()]
 LIBCAMERA_CFLAGS:INTERNAL=-I/usr/include/libcamera
 LIBCAMERA_CFLAGS_I:INTERNAL=
 LIBCAMERA_CFLAGS_OTHER:INTERNAL=

@@ -1,0 +1,4 @@
+/home/ben/LCCV-main/scanner/build/CMakeFiles/scanner.dir
+/home/ben/LCCV-main/scanner/build/CMakeFiles/edit_cache.dir
+/home/ben/LCCV-main/scanner/build/CMakeFiles/rebuild_cache.dir
+/home/ben/LCCV-main/scanner/build/CMakeFiles/scanner_autogen.dir

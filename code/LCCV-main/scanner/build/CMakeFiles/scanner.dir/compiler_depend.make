@@ -1675,7 +1675,6 @@ CMakeFiles/scanner.dir/src/main.cpp.o: /home/ben/LCCV-main/scanner/src/main.cpp 
   /usr/include/libcamera/libcamera/base/signal.h \
   /usr/include/libcamera/libcamera/controls.h \
   /usr/include/libcamera/libcamera/geometry.h \
-  /usr/include/libcamera/libcamera/base/compiler.h \
   /usr/include/libcamera/libcamera/orientation.h \
   /usr/include/libcamera/libcamera/request.h \
   /usr/include/libcamera/libcamera/fence.h \
@@ -2775,8 +2774,135 @@ CMakeFiles/scanner.dir/src/main.cpp.o: /home/ben/LCCV-main/scanner/src/main.cpp 
   /usr/include/boost/asio/windows/random_access_handle.hpp \
   /usr/include/boost/asio/windows/stream_handle.hpp \
   /usr/include/boost/asio/write_at.hpp \
-  /usr/include/boost/asio/impl/write_at.hpp
+  /usr/include/boost/asio/impl/write_at.hpp \
+  /usr/include/nlohmann/json.hpp \
+  /usr/include/nlohmann/adl_serializer.hpp \
+  /usr/include/nlohmann/detail/abi_macros.hpp \
+  /usr/include/nlohmann/detail/conversions/from_json.hpp \
+  /usr/include/c++/12/forward_list \
+  /usr/include/c++/12/bits/forward_list.h \
+  /usr/include/c++/12/bits/forward_list.tcc \
+  /usr/include/c++/12/valarray \
+  /usr/include/c++/12/bits/valarray_array.h \
+  /usr/include/c++/12/bits/valarray_array.tcc \
+  /usr/include/c++/12/bits/valarray_before.h \
+  /usr/include/c++/12/bits/slice_array.h \
+  /usr/include/c++/12/bits/valarray_after.h \
+  /usr/include/c++/12/bits/gslice.h \
+  /usr/include/c++/12/bits/gslice_array.h \
+  /usr/include/c++/12/bits/mask_array.h \
+  /usr/include/c++/12/bits/indirect_array.h \
+  /usr/include/nlohmann/detail/exceptions.hpp \
+  /usr/include/nlohmann/detail/value_t.hpp \
+  /usr/include/nlohmann/detail/macro_scope.hpp \
+  /usr/include/nlohmann/detail/meta/detected.hpp \
+  /usr/include/nlohmann/detail/meta/void_t.hpp \
+  /usr/include/nlohmann/thirdparty/hedley/hedley.hpp \
+  /usr/include/nlohmann/detail/string_escape.hpp \
+  /usr/include/nlohmann/detail/input/position_t.hpp \
+  /usr/include/nlohmann/detail/meta/cpp_future.hpp \
+  /usr/include/nlohmann/detail/meta/type_traits.hpp \
+  /usr/include/nlohmann/detail/iterators/iterator_traits.hpp \
+  /usr/include/nlohmann/detail/meta/call_std/begin.hpp \
+  /usr/include/nlohmann/detail/meta/call_std/end.hpp \
+  /usr/include/nlohmann/json_fwd.hpp \
+  /usr/include/nlohmann/detail/string_concat.hpp \
+  /usr/include/nlohmann/detail/meta/identity_tag.hpp \
+  /usr/include/nlohmann/detail/meta/std_fs.hpp \
+  /usr/include/c++/12/filesystem \
+  /usr/include/c++/12/bits/fs_fwd.h \
+  /usr/include/c++/12/bits/fs_path.h \
+  /usr/include/c++/12/codecvt \
+  /usr/include/c++/12/bits/fs_dir.h \
+  /usr/include/c++/12/bits/fs_ops.h \
+  /usr/include/nlohmann/detail/conversions/to_json.hpp \
+  /usr/include/nlohmann/detail/iterators/iteration_proxy.hpp \
+  /usr/include/nlohmann/byte_container_with_subtype.hpp \
+  /usr/include/nlohmann/detail/hash.hpp \
+  /usr/include/nlohmann/detail/input/binary_reader.hpp \
+  /usr/include/nlohmann/detail/input/input_adapters.hpp \
+  /usr/include/nlohmann/detail/input/json_sax.hpp \
+  /usr/include/nlohmann/detail/input/lexer.hpp \
+  /usr/include/nlohmann/detail/meta/is_sax.hpp \
+  /usr/include/nlohmann/detail/input/parser.hpp \
+  /usr/include/nlohmann/detail/iterators/internal_iterator.hpp \
+  /usr/include/nlohmann/detail/iterators/primitive_iterator.hpp \
+  /usr/include/nlohmann/detail/iterators/iter_impl.hpp \
+  /usr/include/nlohmann/detail/iterators/json_reverse_iterator.hpp \
+  /usr/include/nlohmann/detail/json_pointer.hpp \
+  /usr/include/nlohmann/detail/json_ref.hpp \
+  /usr/include/nlohmann/detail/output/binary_writer.hpp \
+  /usr/include/nlohmann/detail/output/output_adapters.hpp \
+  /usr/include/nlohmann/detail/output/serializer.hpp \
+  /usr/include/nlohmann/detail/conversions/to_chars.hpp \
+  /usr/include/nlohmann/ordered_map.hpp \
+  /usr/include/nlohmann/detail/macro_unscope.hpp \
+  /usr/include/nlohmann/thirdparty/hedley/hedley_undef.hpp
 
+
+/usr/include/nlohmann/detail/macro_unscope.hpp:
+
+/usr/include/nlohmann/ordered_map.hpp:
+
+/usr/include/nlohmann/detail/conversions/to_chars.hpp:
+
+/usr/include/nlohmann/detail/output/output_adapters.hpp:
+
+/usr/include/nlohmann/detail/output/binary_writer.hpp:
+
+/usr/include/nlohmann/detail/json_ref.hpp:
+
+/usr/include/nlohmann/detail/iterators/internal_iterator.hpp:
+
+/usr/include/nlohmann/detail/input/lexer.hpp:
+
+/usr/include/nlohmann/detail/input/json_sax.hpp:
+
+/usr/include/nlohmann/detail/input/binary_reader.hpp:
+
+/usr/include/nlohmann/detail/hash.hpp:
+
+/usr/include/nlohmann/byte_container_with_subtype.hpp:
+
+/usr/include/nlohmann/detail/conversions/to_json.hpp:
+
+/usr/include/c++/12/bits/fs_ops.h:
+
+/usr/include/c++/12/bits/fs_fwd.h:
+
+/usr/include/c++/12/filesystem:
+
+/usr/include/nlohmann/detail/meta/identity_tag.hpp:
+
+/usr/include/c++/12/bits/fs_path.h:
+
+/usr/include/nlohmann/detail/meta/call_std/begin.hpp:
+
+/usr/include/nlohmann/detail/iterators/iterator_traits.hpp:
+
+/usr/include/nlohmann/detail/meta/cpp_future.hpp:
+
+/usr/include/nlohmann/detail/string_escape.hpp:
+
+/usr/include/nlohmann/thirdparty/hedley/hedley.hpp:
+
+/usr/include/nlohmann/detail/meta/void_t.hpp:
+
+/usr/include/c++/12/bits/mask_array.h:
+
+/usr/include/c++/12/bits/gslice_array.h:
+
+/usr/include/c++/12/bits/valarray_after.h:
+
+/usr/include/c++/12/bits/slice_array.h:
+
+/usr/include/c++/12/bits/valarray_before.h:
+
+/usr/include/c++/12/bits/forward_list.h:
+
+/usr/include/nlohmann/adl_serializer.hpp:
+
+/usr/include/nlohmann/json.hpp:
 
 /usr/include/aarch64-linux-gnu/qt5/QtWidgets/qmessagebox.h:
 
@@ -2813,6 +2939,8 @@ CMakeFiles/scanner.dir/src/main.cpp.o: /home/ben/LCCV-main/scanner/src/main.cpp 
 /usr/include/aarch64-linux-gnu/qt5/QtWidgets/qlayout.h:
 
 /usr/include/aarch64-linux-gnu/qt5/QtWidgets/qboxlayout.h:
+
+/usr/include/c++/12/valarray:
 
 /usr/include/aarch64-linux-gnu/qt5/QtGui/qfontinfo.h:
 
@@ -3198,6 +3326,8 @@ CMakeFiles/scanner.dir/src/main.cpp.o: /home/ben/LCCV-main/scanner/src/main.cpp 
 
 /usr/include/boost/asio/impl/thread_pool.hpp:
 
+/usr/include/nlohmann/detail/exceptions.hpp:
+
 /usr/include/boost/asio/thread_pool.hpp:
 
 /usr/include/boost/asio/signal_set.hpp:
@@ -3378,6 +3508,8 @@ CMakeFiles/scanner.dir/src/main.cpp.o: /home/ben/LCCV-main/scanner/src/main.cpp 
 
 /usr/include/boost/preprocessor/tuple/elem.hpp:
 
+/usr/include/nlohmann/detail/string_concat.hpp:
+
 /usr/include/boost/asio/posix/basic_descriptor.hpp:
 
 /usr/include/linux/ioctl.h:
@@ -3430,6 +3562,8 @@ CMakeFiles/scanner.dir/src/main.cpp.o: /home/ben/LCCV-main/scanner/src/main.cpp 
 
 /usr/include/asm-generic/int-ll64.h:
 
+/usr/include/nlohmann/detail/input/parser.hpp:
+
 /usr/include/boost/asio/detail/object_pool.hpp:
 
 /usr/include/c++/12/bits/stl_map.h:
@@ -3447,6 +3581,8 @@ CMakeFiles/scanner.dir/src/main.cpp.o: /home/ben/LCCV-main/scanner/src/main.cpp 
 /usr/include/boost/asio/detail/scheduler_operation.hpp:
 
 /usr/include/aarch64-linux-gnu/bits/endianness.h:
+
+/usr/include/nlohmann/detail/output/serializer.hpp:
 
 /usr/include/boost/mpl/aux_/value_wknd.hpp:
 
@@ -3475,6 +3611,8 @@ CMakeFiles/scanner.dir/src/main.cpp.o: /home/ben/LCCV-main/scanner/src/main.cpp 
 /usr/include/boost/asio/impl/serial_port_base.hpp:
 
 /usr/include/boost/asio/execution/bulk_execute.hpp:
+
+/usr/include/nlohmann/json_fwd.hpp:
 
 /usr/include/boost/mpl/aux_/config/compiler.hpp:
 
@@ -3592,6 +3730,8 @@ CMakeFiles/scanner.dir/src/main.cpp.o: /home/ben/LCCV-main/scanner/src/main.cpp 
 
 /usr/include/aarch64-linux-gnu/bits/types/struct_iovec.h:
 
+/usr/include/c++/12/bits/indirect_array.h:
+
 /usr/include/boost/cerrno.hpp:
 
 /usr/include/netdb.h:
@@ -3648,6 +3788,8 @@ CMakeFiles/scanner.dir/src/main.cpp.o: /home/ben/LCCV-main/scanner/src/main.cpp 
 
 /usr/include/c++/12/compare:
 
+/usr/include/nlohmann/detail/meta/is_sax.hpp:
+
 /usr/include/aarch64-linux-gnu/sys/procfs.h:
 
 /usr/include/boost/asio/detail/winsock_init.hpp:
@@ -3691,6 +3833,8 @@ CMakeFiles/scanner.dir/src/main.cpp.o: /home/ben/LCCV-main/scanner/src/main.cpp 
 /usr/include/opencv4/opencv2/highgui.hpp:
 
 /usr/include/boost/preprocessor/repeat.hpp:
+
+/usr/include/c++/12/bits/valarray_array.h:
 
 /usr/lib/linux/uapi/arm64/asm/types.h:
 
@@ -3773,6 +3917,8 @@ CMakeFiles/scanner.dir/src/main.cpp.o: /home/ben/LCCV-main/scanner/src/main.cpp 
 /usr/include/c++/12/iterator:
 
 /usr/include/boost/asio/detail/call_stack.hpp:
+
+/usr/include/c++/12/codecvt:
 
 /usr/include/aarch64-linux-gnu/qt5/QtGui/qtextoption.h:
 
@@ -3956,6 +4102,8 @@ CMakeFiles/scanner.dir/src/main.cpp.o: /home/ben/LCCV-main/scanner/src/main.cpp 
 
 /usr/include/aarch64-linux-gnu/bits/environments.h:
 
+/usr/include/c++/12/forward_list:
+
 /usr/include/boost/numeric/conversion/detail/converter.hpp:
 
 /usr/include/boost/config.hpp:
@@ -4112,6 +4260,8 @@ scanner_autogen/mocs_compilation.cpp:
 
 /usr/include/aarch64-linux-gnu/bits/getopt_posix.h:
 
+/usr/include/nlohmann/detail/conversions/from_json.hpp:
+
 /usr/include/boost/asio/require.hpp:
 
 /usr/include/aarch64-linux-gnu/bits/siginfo-consts.h:
@@ -4130,6 +4280,8 @@ scanner_autogen/mocs_compilation.cpp:
 
 /usr/include/boost/asio/io_service.hpp:
 
+/usr/include/nlohmann/thirdparty/hedley/hedley_undef.hpp:
+
 /usr/include/aarch64-linux-gnu/bits/mman-shared.h:
 
 /usr/include/boost/asio/ip/detail/socket_option.hpp:
@@ -4147,6 +4299,8 @@ scanner_autogen/mocs_compilation.cpp:
 /usr/include/boost/asio/detail/timer_queue.hpp:
 
 /usr/include/c++/12/bits/hash_bytes.h:
+
+/usr/include/c++/12/bits/gslice.h:
 
 /usr/include/aarch64-linux-gnu/bits/posix1_lim.h:
 
@@ -4376,6 +4530,8 @@ scanner_autogen/mocs_compilation.cpp:
 
 /usr/include/c++/12/cstdlib:
 
+/usr/include/nlohmann/detail/meta/std_fs.hpp:
+
 /usr/include/boost/asio/detail/non_const_lvalue.hpp:
 
 /usr/include/c++/12/bits/stl_tempbuf.h:
@@ -4431,6 +4587,8 @@ scanner_autogen/mocs_compilation.cpp:
 /usr/include/aarch64-linux-gnu/bits/termios-c_cc.h:
 
 /usr/include/stdlib.h:
+
+/usr/include/nlohmann/detail/macro_scope.hpp:
 
 /usr/include/c++/12/ext/aligned_buffer.h:
 
@@ -4498,6 +4656,8 @@ scanner_autogen/mocs_compilation.cpp:
 
 /usr/include/aarch64-linux-gnu/bits/types/timer_t.h:
 
+/usr/include/nlohmann/detail/meta/call_std/end.hpp:
+
 /usr/include/c++/12/bits/predefined_ops.h:
 
 /usr/include/c++/12/bits/string_view.tcc:
@@ -4525,6 +4685,8 @@ scanner_autogen/mocs_compilation.cpp:
 /usr/include/aarch64-linux-gnu/bits/socket_type.h:
 
 /usr/include/boost/asio/detail/reactive_socket_recvfrom_op.hpp:
+
+/usr/include/nlohmann/detail/input/input_adapters.hpp:
 
 /usr/include/aarch64-linux-gnu/bits/waitstatus.h:
 
@@ -4606,6 +4768,8 @@ scanner_autogen/mocs_compilation.cpp:
 
 /usr/include/boost/asio/detail/reactor_fwd.hpp:
 
+/usr/include/nlohmann/detail/meta/type_traits.hpp:
+
 /usr/include/aarch64-linux-gnu/bits/types/struct_sched_param.h:
 
 /usr/include/libcamera/libcamera/stream.h:
@@ -4654,6 +4818,8 @@ scanner_autogen/mocs_compilation.cpp:
 
 /usr/include/c++/12/bits/stl_multimap.h:
 
+/usr/include/nlohmann/detail/meta/detected.hpp:
+
 /usr/include/boost/asio/traits/start_free.hpp:
 
 /usr/include/aarch64-linux-gnu/bits/procfs-id.h:
@@ -4691,6 +4857,8 @@ scanner_autogen/mocs_compilation.cpp:
 /usr/include/boost/asio/packaged_task.hpp:
 
 /usr/include/c++/12/pstl/execution_defs.h:
+
+/usr/include/nlohmann/detail/iterators/json_reverse_iterator.hpp:
 
 /usr/include/boost/asio/detail/pop_options.hpp:
 
@@ -4782,6 +4950,8 @@ scanner_autogen/mocs_compilation.cpp:
 
 /usr/include/boost/mpl/if.hpp:
 
+/usr/include/nlohmann/detail/value_t.hpp:
+
 /usr/include/aarch64-linux-gnu/bits/termios.h:
 
 /usr/include/boost/asio/detail/variadic_templates.hpp:
@@ -4865,6 +5035,8 @@ scanner_autogen/mocs_compilation.cpp:
 /usr/include/boost/asio/impl/io_context.hpp:
 
 /usr/include/c++/12/istream:
+
+/usr/include/nlohmann/detail/iterators/primitive_iterator.hpp:
 
 /usr/include/boost/asio/detail/completion_handler.hpp:
 
@@ -5049,6 +5221,8 @@ scanner_autogen/mocs_compilation.cpp:
 /usr/include/boost/smart_ptr/detail/sp_thread_sleep.hpp:
 
 /usr/include/boost/config/pragma_message.hpp:
+
+/usr/include/nlohmann/detail/abi_macros.hpp:
 
 /usr/include/opencv4/opencv2/flann.hpp:
 
@@ -5270,6 +5444,8 @@ scanner_autogen/mocs_compilation.cpp:
 
 /usr/include/boost/mpl/aux_/adl_barrier.hpp:
 
+/usr/include/nlohmann/detail/iterators/iter_impl.hpp:
+
 /usr/include/boost/numeric/conversion/bounds.hpp:
 
 /usr/include/boost/mpl/aux_/config/gcc.hpp:
@@ -5310,13 +5486,13 @@ scanner_autogen/mocs_compilation.cpp:
 
 /usr/include/boost/mpl/aux_/template_arity_fwd.hpp:
 
+/usr/include/c++/12/bits/fs_dir.h:
+
 /usr/include/boost/mpl/aux_/arity.hpp:
 
 /usr/include/boost/mpl/aux_/config/dtp.hpp:
 
 /usr/include/aarch64-linux-gnu/qt5/QtWidgets/QWidget:
-
-/usr/include/libcamera/libcamera/base/compiler.h:
 
 /usr/include/boost/asio/detail/work_dispatcher.hpp:
 
@@ -5349,6 +5525,8 @@ scanner_autogen/mocs_compilation.cpp:
 /usr/include/boost/asio/ip/network_v6.hpp:
 
 /usr/include/boost/preprocessor/debug/error.hpp:
+
+/usr/include/nlohmann/detail/iterators/iteration_proxy.hpp:
 
 /usr/include/boost/preprocessor/arithmetic/inc.hpp:
 
@@ -5584,6 +5762,8 @@ scanner_autogen/mocs_compilation.cpp:
 
 /usr/include/aarch64-linux-gnu/bits/termios-tcflow.h:
 
+/usr/include/c++/12/bits/forward_list.tcc:
+
 /usr/include/boost/asio/detail/impl/service_registry.ipp:
 
 /usr/include/c++/12/streambuf:
@@ -5607,6 +5787,8 @@ scanner_autogen/mocs_compilation.cpp:
 /usr/include/boost/asio/detail/static_mutex.hpp:
 
 /usr/include/boost/asio/basic_waitable_timer.hpp:
+
+/usr/include/nlohmann/detail/json_pointer.hpp:
 
 /usr/include/boost/asio/execution_context.hpp:
 
@@ -5673,6 +5855,8 @@ scanner_autogen/mocs_compilation.cpp:
 /usr/include/boost/asio/executor.hpp:
 
 /usr/include/boost/asio/generic/detail/endpoint.hpp:
+
+/usr/include/c++/12/bits/valarray_array.tcc:
 
 /usr/include/boost/asio/generic/seq_packet_protocol.hpp:
 
@@ -5825,6 +6009,8 @@ scanner_autogen/mocs_compilation.cpp:
 /usr/include/boost/predef/compiler.h:
 
 /usr/include/boost/predef/compiler/clang.h:
+
+/usr/include/nlohmann/detail/input/position_t.hpp:
 
 /usr/include/boost/predef/compiler/diab.h:
 

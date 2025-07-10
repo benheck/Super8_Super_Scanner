@@ -16,6 +16,8 @@ find_package(PkgConfig REQUIRED)
 find_package(Qt5Widgets REQUIRED)
 pkg_check_modules(LIBCAMERA REQUIRED libcamera)
 find_package(Boost REQUIRED COMPONENTS system)
+find_package(nlohmann_json REQUIRED) # Add this line
+
 
 # Include directories for LCCV, Qt5, and dependencies
 include_directories(
@@ -43,6 +45,7 @@ target_link_libraries(scanner
     ${OpenCV_LIBS}
     ${LIBCAMERA_LINK_LIBRARIES}
     Boost::system
+    nlohmann_json::nlohmann_json
 )
 
 # Ensure proper compiler definitions for Qt

@@ -23,9 +23,12 @@
 #include <atomic>
 #include <mutex>
 
+#include <fstream>
 #include <chrono>
 #include <iomanip>
 
+#include <nlohmann/json.hpp>
+using json = nlohmann::json;
 
 MarlinController *marlin = nullptr;
 
@@ -49,6 +52,7 @@ cv::Mat image, gray, binary;
 std::mutex cameraMutex; // Mutex to protect shared resources
 cv::Mat image4kin;
 bool holeFound = false;
+bool holeValidCenter = false;   //Is hole center enough to crop frame? (ie not too high or low)
 int centerX;                //Sprocket center position in pixels
 int centerY;
 int validYrangeTop = (frameSizeY / 2) - (frameSizeY / 8); // Top of the valid Y range for the sprocket hole
@@ -64,9 +68,9 @@ QTimer *timer = nullptr; // Global pointer to the QTimer
 QString defaultFilename = "frame"; // Default filename for exports
 QString saveFolder = "export"; // Default save folder
 
-int sprocketLeftSide = 700; // Left side of the sprocket hole
-int sprocketSafeCenter = 900; // Center of the sprocket hole, to the right of the left side
-int sprocketThreshold = 220; // Threshold for sprocket hole detection (200 + this max 255)
+int sprocketLeftSide = 700;     // Left side of the sprocket hole
+int sprocketSafeCenter = 900;   // Center of the sprocket hole, to the right of the left side
+int sprocketThreshold = 220;    // Threshold for sprocket hole detection (200 + this max 255)
 
 // Configurable
 bool focusMode = false; // Flag to indicate if focus mode is enabled
@@ -85,9 +89,53 @@ bool stopScanFlag = false; // Flag to indicate if the scan should be stopped
 int skipFrameCount = 0;
 int skipFrameTarget = 50;
 
+int sprocketMinHeight = 400; // Minimum height of the sprocket hole in pixels
 cv::Point scanSize;             // Initialize scan size point
 int scanCropWidthXMax = 3200; // Maximum width for cropping the scan (from leftSprocket to the right)
 int scanCropHeightYMax = 1900; // Maximum height for cropping the scan (total with centerY of sprocket in center)
+
+int lastSprocketY = -100;
+int sprocketStillRange = 5;
+int sprocketStillFrameCount = 0; // Counter for frames in the still range
+bool sprocketMoving = true;
+
+cv::VideoWriter videoWriter;    //For to write MP4 video files (regular mode)
+
+void saveSettings(const std::string& filename) {        //Saves the frame paramters in case you close program and then resume
+    json j;
+    j["sprocketLeftSide"] = sprocketLeftSide;
+    j["sprocketSafeCenter"] = sprocketSafeCenter;
+    j["sprocketThreshold"] = sprocketThreshold;
+    j["sprocketMinHeight"] = sprocketMinHeight;
+    j["scanCropWidthXMax"] = scanCropWidthXMax;
+    j["scanCropHeightYMax"] = scanCropHeightYMax;
+
+    std::ofstream file(filename);
+    if (file.is_open()) {
+        file << j.dump(4);
+        file.close();
+        std::cout << "Settings saved to " << filename << std::endl;
+    } else {
+        std::cerr << "Failed to save settings to " << filename << std::endl;
+    }
+}
+
+void loadSettings(const std::string& filename) {
+    std::ifstream file(filename);
+    if (!file.is_open()) {
+        std::cerr << "Settings file not found: " << filename << std::endl;
+        return;
+    }
+    json j;
+    file >> j;
+    sprocketLeftSide = j.value("sprocketLeftSide", sprocketLeftSide);
+    sprocketSafeCenter = j.value("sprocketSafeCenter", sprocketSafeCenter);
+    sprocketThreshold = j.value("sprocketThreshold", sprocketThreshold);
+    sprocketMinHeight = j.value("sprocketMinHeight", sprocketMinHeight);
+    scanCropWidthXMax = j.value("scanCropWidthXMax", scanCropWidthXMax);
+    scanCropHeightYMax = j.value("scanCropHeightYMax", scanCropHeightYMax);
+    std::cout << "Settings loaded from " << filename << std::endl;
+}
 
 void logWithTimestamp(const std::string &message) {
     auto now = std::chrono::system_clock::now();
@@ -135,6 +183,20 @@ void drawText(cv::Mat &imageRef, const std::string &text, int xPos, int yPos, do
     cv::putText(imageRef, text, position, cv::FONT_HERSHEY_SIMPLEX, fontScale, cv::Scalar(0, 0, 0), thickness * 2);
     cv::putText(imageRef, text, position, cv::FONT_HERSHEY_SIMPLEX, fontScale, textColor, thickness);
 
+}
+
+void startVideoWriter(const std::string& filename, int width, int height, double fps) {
+    int codec = cv::VideoWriter::fourcc('a', 'v', 'c', '1'); // or try 'm','p','4','v' if needed
+    videoWriter.open(filename, codec, fps, cv::Size(width, height), true);
+    if (!videoWriter.isOpened()) {
+        std::cerr << "Error: Could not open the output video file for write\n";
+    }
+}
+
+void stopVideoWriter() {
+    if (videoWriter.isOpened()) {
+        videoWriter.release();
+    }
 }
 
 QLabel* createLabel(const QString &text, QWidget *parent = nullptr) {
@@ -280,6 +342,10 @@ void cycleWhiteBalanceMode() {
     std::cout << "White Balance Mode Toggled: " << currentWhiteBalanceMode << std::endl;
 }
 
+int computeSkipFrameTarget(float spool_diameter_mm) {
+    return int(0.266f * spool_diameter_mm + 41.5f + 0.5f); // Add 0.5 for rounding
+}
+
 void reset_spool_tracker(QLineEdit *spoolDiameterInput) {
     // Read the value from the text entry field
     QString inputText = spoolDiameterInput->text();
@@ -299,6 +365,7 @@ void reset_spool_tracker(QLineEdit *spoolDiameterInput) {
     frameNumber = 0;
 
     compute_move_per_frame();
+    computeSkipFrameTarget(spool_diameter_mm);      //Figure out starting skip frame target based on spool diameter
 
     // Reset the total movement tracker
     //data.total_y_movement_mm = 0.0f;
@@ -339,6 +406,7 @@ void advanceFilmTracking(float frames, float speed, bool waitForResponse = false
         float leftover = 0 - movement_mm_turn;          //Save delta past 0
         spool_diameter_mm -= (film_thickness_mm * 2);   // Increase the spool diameter by twice the film thickness
         compute_move_per_frame();       // Recompute the movement per frame based on diameter
+        skipFrameTarget = computeSkipFrameTarget(spool_diameter_mm); // Recompute the skip frame target based on the new spool diameter
         movement_mm_turn = movement_mm_turn_target - leftover;    // Reset the movement to the leftover value
         return;
     }
@@ -348,6 +416,10 @@ void advanceFilmTracking(float frames, float speed, bool waitForResponse = false
         spool_diameter_mm += (film_thickness_mm * 2);   // Increase the spool diameter by twice the film thickness
         compute_move_per_frame();       // Recompute the movement per frame based on diameter
         movement_mm_turn = leftover;    // Reset the movement to the leftover value
+        skipFrameTarget = computeSkipFrameTarget(spool_diameter_mm); // Recompute the skip frame target based on the new spool diameter
+
+        std::cout << "Skip frame target: " << skipFrameTarget << " frames" << std::endl;
+
         return;
     }
 
@@ -399,17 +471,10 @@ cv::Mat focusModeDisplay(const cv::Mat &inputMat) {
 void drawPreviewModeStatus(cv::Mat &imageRef) {
 
     drawText(imageRef, "STATE: " + stateToString(state), 10, 40, 1.0); // Draw the current state on the image
-    drawText(imageRef, "Sprocket XY @ 720p: " + std::to_string(centerX) + " " + std::to_string(centerY), 10, 80, 1.0); // Draw the sprocket coordinates on the image
-
-    //drawText(imageRef, "Sprocket last error delta: " + std::to_string(frameDelta) + "%", 10, 120, 1.0); // Draw the sprocket error delta on the image
-
+    drawText(imageRef, "Sprocket XY @ 2160p: " + std::to_string(centerX) + " " + std::to_string(centerY), 10, 80, 1.0); // Draw the sprocket coordinates on the image
     drawText(imageRef, "Takeup spool diameter: " + std::to_string(spool_diameter_mm) + " mm", 10, 120, 1.0); // Draw the takeup spool diameter on the image
-    //drawText(imageRef, "Takeup movement per frame: " + std::to_string(mmPerFrame) + " mm", 10, 280, 1.0); // Draw the takeup movement per frame on the image
-    
-    //drawText(imageRef, "Movement per Turn: " + std::to_string(movement_mm_turn) + " mm", 10, 320, 1.0); // Draw the movement per turn on the image
-    //drawText(imageRef, "Movement Target: " + std::to_string(movement_mm_turn_target) + " mm", 10, 360, 1.0); // Draw the movement target on the image
-
-
+    drawText(image, "Scan frame size: " + std::to_string(scanSize.x) + " x " + std::to_string(scanSize.y), 10, 160, 1.0); // Draw the scan frame size on the image
+    drawText(imageRef, "Sprocket hole height: " + std::to_string(sprocketMinHeight) + "px", 10, 200, 1.0); // Draw the movement per frame on the image
 
 }
 
@@ -417,6 +482,10 @@ void switchToPreviewMode() {        //Run fast, scaled live video
 
     if (state == preview) {
         return; // If already in preview mode, do nothing
+    }
+
+    if (state == setup) {
+        saveSettings("scan_settings.json");
     }
 
     cam.stopPhoto(); // Stop the photo mode if it's running
@@ -481,6 +550,206 @@ void updateVideoFeed() {
 
 }
 
+void updateVideoFeedWASTE() { // Update the video feed
+
+    if (!cam.getVideoFrame(image, 1000)) { // Capture a video frame from the camera
+        std::cerr << "Error: Failed to capture video frame!" << std::endl;
+        return;
+    }
+
+    cv::flip(image, image, 1); // Flip the image horizontally
+
+    if (focusMode) {        //Show full scale image in focus mode, draw focus score and nothing else (return)
+        image = focusModeDisplay(image); // Crop the image to the center for focus mode
+        drawText(image, "STATE: " + stateToString(state) + " / FOCUSING", 10, 40, 1.0); // Draw the current state on the image
+        drawText(image, "Focus Score: " + std::to_string(computeFocusScore(image)) + " higher is better", 10, previewWindowSizeY - 40, 1.0); // Draw the focus score on the image
+    
+        QImage qImage = matToQImage(image);
+
+        if (!qImage.isNull() && videoLabel != nullptr) {
+            videoLabel->setPixmap(QPixmap::fromImage(qImage)); // Display the frame in QLabel
+        }
+
+        return;
+    }
+
+    cv::cvtColor(image, gray, cv::COLOR_BGR2GRAY);    // Convert the image to grayscale
+    cv::threshold(gray, gray, sprocketThreshold, 255, cv::THRESH_BINARY); // Apply binary thresholding to isolate the white sprocket hole
+
+    // //Crop binary to be same width as sprocket hole safe center:
+    cv::Rect cropRect(sprocketLeftSide, 0, sprocketSafeCenter - sprocketLeftSide, frameSizeY); // Define the crop rectangle
+    cv::Mat croppedBinary = gray(cropRect); // Crop the binary image
+
+    std::vector<std::vector<cv::Point>> contours;
+    cv::findContours(croppedBinary, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE); // Find contours
+
+    int toleranceYtop = validYrangeTop;
+    int toleranceYbottom = validYrangeBottom; // Bottom of the valid Y range for the sprocket hole
+
+    holeValidCenter = false;
+
+    for (const auto& contour : contours) {
+
+        cv::Rect boundingBox = cv::boundingRect(contour);
+
+        //Calc center of this boundingBox:
+        centerX = boundingBox.x + (boundingBox.width / 2);
+        centerY = boundingBox.y + (boundingBox.height / 2);
+
+        if (boundingBox.height > sprocketMinHeight) {
+
+            holeFound = true; // Set the hole found flag to true
+
+            if (findHoleFlag) { // If the hole is found, set the flag to false
+                findHoleFlag = false; // Reset the flag
+                std::cout << "Sprocket hole re-acquired" << std::endl; // Log the event
+            }
+
+            //Move bounding box sprocketLeftSide pixels right:
+            boundingBox.x += sprocketLeftSide; // Move the bounding box to the right by sprocketLeftSide pixels
+            centerX += sprocketLeftSide; // Move the centerX to the right by sprocketLeftSide pixels
+
+            if (state == preview) {
+                // Draw a green rectangle around the detected sprocket hole:
+                cv::rectangle(image, boundingBox, cv::Scalar(0, 255, 0), 10);
+
+                // Make a copy of boundingBox at half height then draw it:
+                cv::Rect halfHeightBox = boundingBox;
+                halfHeightBox.y = centerY - (sprocketMinHeight / 2); // Center the box vertically
+                halfHeightBox.height = sprocketMinHeight; // Set the height to sprocketMinHeight
+                cv::rectangle(image, halfHeightBox, cv::Scalar(255, 0, 0), 5); // Draw the half-height bounding box in blue
+
+                //Draw a red bomb sight in center of sprocket hole:
+                cv::line(image, cv::Point(centerX - 50, centerY), cv::Point(centerX + 50, centerY), cv::Scalar(0, 0, 255), 5);
+                cv::line(image, cv::Point(centerX, centerY - 50), cv::Point(centerX, centerY + 50), cv::Scalar(0, 0, 255), 5);
+            }
+
+            //Hole center enough for a valid crop?
+            if (boundingBox.y > (image.rows / 3) && boundingBox.y < ((image.rows / 3) * 2)) {
+                holeValidCenter = true;
+            }
+
+            break; // Stop after detecting the first sprocket hole
+
+        }
+
+    }
+
+    scanSize.x = scanCropWidthXMax - sprocketSafeCenter; // Width of the scan size rectangle
+    scanSize.y = scanCropHeightYMax; // Height of the scan size rectangle
+
+    if (state == preview) {
+        // cv::line(image, cv::Point(frameSizeX / 2, 0), cv::Point(frameSizeX / 2, frameSizeY), cv::Scalar(255, 0, 0), 2);
+        // cv::line(image, cv::Point(0, frameSizeY / 2), cv::Point(frameSizeX, frameSizeY / 2), cv::Scalar(255, 0, 0), 2);
+
+        // cv::line(image, cv::Point(sprocketLeftSide, 0), cv::Point(sprocketLeftSide, frameSizeY), cv::Scalar(255, 0, 0), 5);
+        // cv::line(image, cv::Point(sprocketSafeCenter, 0), cv::Point(sprocketSafeCenter, frameSizeY), cv::Scalar(0, 0, 255), 5);
+
+        // if (holeValidCenter) {      //Only draw crop box if the sprocket hole is valid
+        //     try {       //And in case it isn't...
+        //         cv::rectangle(image, cv::Point(sprocketSafeCenter, centerY - (scanCropHeightYMax / 2)), cv::Point(scanCropWidthXMax, centerY + (scanCropHeightYMax / 2)), cv::Scalar(255, 255, 0), 8);
+        //     }
+        //     catch (const std::exception &e) {
+        //         std::cerr << "Error: " << e.what() << std::endl;
+        //     }
+        // }
+    }
+
+    if (state == scanning) {    //SAVE FULL SIZE HERE HERE IF SCANNING----
+        
+        if (holeFound) {
+
+            if (centerY - (scanCropHeightYMax / 2) < 0) { // Check if the centerY is less than half the crop height
+                
+                logWithTimestamp("Top of crop < 0 Y, nudging...");
+                advanceFilmTracking(0.05f, 250.0f); // Move the film forward by one frame
+            }
+            else {
+
+                cv::Rect cropRect(sprocketSafeCenter, centerY - (scanCropHeightYMax / 2), scanCropWidthXMax - sprocketSafeCenter, scanCropHeightYMax); // Define the crop rectangle
+                cv::Mat croppedPhoto = image(cropRect); // Crop the photo
+
+                advanceFilmTracking(1.0f, 3000.0f, true);
+
+                // Write frame to video
+                videoWriter.write(croppedPhoto);
+
+                marlin->waitForMoveCompletion();
+
+                frameNumber++;
+
+                sprocketStillFrameCount = 0;
+                state = frameAdvance; // Set the state to frame advance wait for video to get still
+
+            }
+
+        }
+        else {
+
+            //Check center of screen for empty image:
+            cv::Rect cropRect(sprocketSafeCenter, (frameSizeY / 2) - (scanCropHeightYMax / 2), scanCropWidthXMax - sprocketSafeCenter, scanCropHeightYMax); // Define the crop rectangle
+            cv::Mat croppedPhoto = image(cropRect); // Crop the photo
+            cv::Scalar meanValue = cv::mean(croppedPhoto); // Calculate the mean value of the cropped photo
+
+            if (meanValue[0] > 240) {           // Check if the mean value is above a certain threshold (indicating a mostly empty image)
+                stopScanFlag = true;            // Set the stop scan flag to true
+
+                onLightOffButtonClicked();      // Turn off the light
+                onFanOffButtonClicked();        // Turn off the fan
+                onDisableMotorsClicked();       // Disable the motors
+                switchToPreviewMode(); // Switch back to preview mode
+
+                showPopup("Scan completed"); // Show a popup message indicating the scan is complete
+
+                return;                         // Exit the function if the image is mostly empty
+            }
+
+            findHoleFlag = true; // Find hole next frames(s) higher tolerance
+
+            logWithTimestamp("No sprocket hole found, nudging...");
+
+            advanceFilmTracking(0.05f, 250.0f); // Move the film forward by one frame
+
+        }
+
+    }
+
+    //Done saving, can scale image to frame size now and add info to it
+    image = scaleToFitFrameSize(image, previewWindowSizeX); // Scale the image to fit the preview window size
+    drawPreviewModeStatus(image);         //Draw info on screen TODO: Add more!
+    QImage qImage = matToQImage(image);    //Scan to window size
+
+    if (!qImage.isNull() && videoLabel != nullptr) {
+        videoLabel->setPixmap(QPixmap::fromImage(qImage)); // Display the frame in QLabel
+    }
+
+}
+
+void updateVideoFeedWaitForStill() { // Called repeatedly by external poll/timer
+
+    static int sprocketStillFrameCount = 0;
+
+    if (!cam.getVideoFrame(image, 1000)) {
+        std::cerr << "Error: Failed to capture video frame!" << std::endl;
+        return;
+    }
+
+    cv::flip(image, image, 1);
+
+    if (++sprocketStillFrameCount > 3) {
+        sprocketStillFrameCount = 0;
+        state = scanning; // Set the state to scanning after a few frames
+    }
+
+    // Optionally, draw/preview as before
+    image = scaleToFitFrameSize(image, previewWindowSizeX);
+    drawPreviewModeStatus(image);
+    QImage qImage = matToQImage(image);
+    if (!qImage.isNull() && videoLabel != nullptr) {
+        videoLabel->setPixmap(QPixmap::fromImage(qImage));
+    }
+}
+
 void updateSetupImage() {       //Draws on a frame buffer for SPEED image4kin was captured in switchToSetupMode()
     
     image = image4kin.clone(); // Clone the 4k image to the image variable
@@ -500,10 +769,10 @@ void updateSetupImage() {       //Draws on a frame buffer for SPEED image4kin wa
     holeFound = false; // Reset hole found flag
 
         // Draw a vertical line at the left side of the sprocket hole
-        cv::line(image, cv::Point(sprocketLeftSide, 0), cv::Point(sprocketLeftSide, frameSizeY), cv::Scalar(255, 0, 0), 5);
+    cv::line(image, cv::Point(sprocketLeftSide, 0), cv::Point(sprocketLeftSide, frameSizeY), cv::Scalar(255, 0, 0), 5);
 
-        // Draw a vertical line for sprocket safe center (slightly left of where vertical tears might be)
-        cv::line(image, cv::Point(sprocketSafeCenter, 0), cv::Point(sprocketSafeCenter, frameSizeY), cv::Scalar(0, 0, 255), 5);
+    // Draw a vertical line for sprocket safe center (slightly left of where vertical tears might be)
+    cv::line(image, cv::Point(sprocketSafeCenter, 0), cv::Point(sprocketSafeCenter, frameSizeY), cv::Scalar(0, 0, 255), 5);
 
     for (const auto& contour : contours) {
 
@@ -538,7 +807,7 @@ void updateSetupImage() {       //Draws on a frame buffer for SPEED image4kin wa
     if (holeFound) {
 
         //Draw a yellow rectangle from sprocketLeftSide to scanCropWidthXMax, with height scanCropHeightYMax center on centerY:
-        cv::rectangle(image, cv::Point(sprocketSafeCenter, centerY - (scanCropHeightYMax / 2)), cv::Point(scanCropWidthXMax, centerY + (scanCropHeightYMax / 2)), cv::Scalar(255, 255, 0), 6);
+        cv::rectangle(image, cv::Point(sprocketSafeCenter, centerY - (scanCropHeightYMax / 2)), cv::Point(scanCropWidthXMax, centerY + (scanCropHeightYMax / 2)), cv::Scalar(255, 255, 0), 8);
 
         //Compute the scan size of the above rectangle:
         scanSize.x = scanCropWidthXMax - sprocketSafeCenter; // Width of the scan size rectangle
@@ -565,11 +834,13 @@ void scanSingleFrame() {        //Like updateSetupImage but for scanning
     //Log frame time:
     auto startTime = std::chrono::high_resolution_clock::now(); // Start time for logging
 
+    //Burn off the blurry frame
     if (cam.capturePhoto(image) == false) {
         std::cerr << "Error: Failed to capture real photo!" << std::endl;
         return; // Skip if the image capture fails
     }  
 
+    //Take the good one
     if (cam.capturePhoto(image) == false) {
         std::cerr << "Error: Failed to capture real photo!" << std::endl;
         return; // Skip if the image capture fails
@@ -596,9 +867,11 @@ void scanSingleFrame() {        //Like updateSetupImage but for scanning
         toleranceYbottom = validYrangeBottomNarrow; // Bottom of the valid Y range for the sprocket hole
     }
 
+    cv::Rect boundingBox;
+
     for (const auto& contour : contours) {
 
-        cv::Rect boundingBox = cv::boundingRect(contour);
+        boundingBox = cv::boundingRect(contour);
 
         //Calc center of boundingBox:
         centerX = boundingBox.x + (boundingBox.width / 2);
@@ -620,7 +893,7 @@ void scanSingleFrame() {        //Like updateSetupImage but for scanning
                 centerX += sprocketLeftSide; // Move the centerX to the right by sprocketLeftSide pixels
 
                 // Draw a green rectangle around the detected sprocket hole:
-                cv::rectangle(image, boundingBox, cv::Scalar(0, 255, 0), 10);
+                //cv::rectangle(image, boundingBox, cv::Scalar(0, 255, 0), 10);
     
                 break; // Stop after detecting the first sprocket hole
     
@@ -630,12 +903,6 @@ void scanSingleFrame() {        //Like updateSetupImage but for scanning
 
 
     }
-
-    // Draw a vertical line at the left side of the sprocket hole
-    cv::line(image, cv::Point(sprocketLeftSide, 0), cv::Point(sprocketLeftSide, frameSizeY), cv::Scalar(255, 0, 0), 5);
-
-    // Draw a vertical line for sprocket safe center (slightly left of where vertical tears might be)
-    cv::line(image, cv::Point(sprocketSafeCenter, 0), cv::Point(sprocketSafeCenter, frameSizeY), cv::Scalar(0, 0, 255), 5);
 
     if (holeFound) {
 
@@ -652,7 +919,6 @@ void scanSingleFrame() {        //Like updateSetupImage but for scanning
             cv::Rect cropRect(sprocketSafeCenter, centerY - (scanCropHeightYMax / 2), scanCropWidthXMax - sprocketSafeCenter, scanCropHeightYMax); // Define the crop rectangle
             cv::Mat croppedPhoto = image(cropRect); // Crop the photo
 
-            //advanceFilmTracking(1.0f - frameDelta, 2000.0f);
             advanceFilmTracking(1.0f, 3000.0f);
 
             // Save the photo to a file with the frame number (bitmap is fastest)
@@ -663,18 +929,9 @@ void scanSingleFrame() {        //Like updateSetupImage but for scanning
             std::string filename = saveFolder.toStdString() + "/" + defaultFilename.toStdString() + "_" + formattedFrameNumber + ".png";
             cv::imwrite(filename, croppedPhoto);
 
-            // Set PNG compression level to 0 (no compression, fastest)
-            // std::vector<int> compression_params;
-            // compression_params.push_back(cv::IMWRITE_PNG_COMPRESSION);
-            // compression_params.push_back(0);  // 0 = no compression, 9 = max compression
-
-            // cv::imwrite(filename, croppedPhoto, compression_params);
-
-            //cv::imwrite(filename, croppedPhoto);
-
             frameNumber++;
 
-            marlin->waitForMoveCompletion(); // Wait for the move to complete
+            //marlin->waitForMoveCompletion(); // Wait for the move to complete
 
         }
 
@@ -707,23 +964,33 @@ void scanSingleFrame() {        //Like updateSetupImage but for scanning
 
     }
 
+    //Draw info stuff after we save the image (so red line not on images)
+
+    cv::rectangle(image, boundingBox, cv::Scalar(0, 255, 0), 10);
+
+    cv::line(image, cv::Point(sprocketLeftSide, 0), cv::Point(sprocketLeftSide, frameSizeY), cv::Scalar(255, 0, 0), 5);
+    cv::line(image, cv::Point(sprocketSafeCenter, 0), cv::Point(sprocketSafeCenter, frameSizeY), cv::Scalar(0, 0, 255), 5);
+
     cv::line(image, cv::Point(0, toleranceYtop), cv::Point(frameSizeX, toleranceYtop), cv::Scalar(255, 255, 0), 5);
     cv::line(image, cv::Point(0, toleranceYbottom), cv::Point(frameSizeX, toleranceYbottom), cv::Scalar(255, 255, 0), 5);
 
     // Make image 1/4th size for display
     cv::resize(image, image, cv::Size(frameSizeX / 4, frameSizeY / 4));
 
+    //Convert frames at 18 FPS to minutes and seconds:
+    int minutes = frameNumber / (18 * 60); // Calculate the number of minutes
+    int seconds = (frameNumber / 18) % 60; // Calculate the number of seconds
+
+    //Draw info on screen
     drawText(image, "STATE: " + stateToString(state), 10, 40, 1.0); // Draw the current state on the image
-    drawText(image, "Frame #: " + std::to_string(frameNumber), 10, 80, 1.0); // Draw the scan frame size on the image
-    drawText(image, "Takeup spool diameter: " + std::to_string(spool_diameter_mm) + " mm", 10, 120, 1.0); // Draw the takeup spool diameter on the image
+    drawText(image, "Frame #: " + std::to_string(frameNumber) + " " + std::to_string(minutes) + "M:" + std::to_string(seconds) + "S", 10, 80, 1.0); // Draw the scan frame size on the image
+    drawText(image, "Takeup diameter: " + std::to_string(spool_diameter_mm) + " mm", 10, 120, 1.0); // Draw the takeup spool diameter on the image
 
     QImage qImage = matToQImage(image); // Convert cv::Mat to QImage
 
     if (!qImage.isNull() && videoLabel != nullptr) {
         videoLabel->setPixmap(QPixmap::fromImage(qImage)); // Display the frame in QLabel
     }
-
-    //marlin->waitForMoveCompletion(); // Wait for the move to complete
 
     auto endTime = std::chrono::high_resolution_clock::now(); // End time for logging
 
@@ -737,6 +1004,12 @@ void scanSingleFrame() {        //Like updateSetupImage but for scanning
 void onStartScanButtonClicked() {
 
     //Make a popup window if currentState is not setup:
+    // if (state != preview) {
+    //     showPopup("Scan must be started in preview mode");
+    //     return; // Exit if the scan is already in progress
+    // }
+
+    //Make a popup window if currentState is not setup:
     if (state != setup) {
         showPopup("Scan must be started in setup mode");
         return; // Exit if the scan is already in progress
@@ -745,14 +1018,29 @@ void onStartScanButtonClicked() {
     state = scanning; // Set the current state to scanning
     stopScanFlag = false; // Reset the stop scan flag
     skipFrameCount = 0;
+    skipFrameTarget = computeSkipFrameTarget(spool_diameter_mm); // Recompute the skip frame target based on current spool diameter
 
     scanSingleFrame();          // Capture first photo   
+
+    return;
+
+    //LIVE VIDEO MODE:
+    //TODO: OTHER CHECKS HERE
+
+    state = scanning;           // Set the current state to scanning
+    stopScanFlag = false;       // Reset the stop scan flag
+    skipFrameCount = 0;         //For takeup reel
+
+    //TODO: Check for valid scan size
+
+    std::string filename = saveFolder.toStdString() + "/" + defaultFilename.toStdString() + ".mp4";
+    startVideoWriter(filename, scanSize.x, scanSize.y, 18.0); // Start the video writer with the desired filename and frame rate
 
 }
 
 void onStopScanButtonClicked() {
 
-    if (state == scanning) {
+    if (state == scanning || state == frameAdvance) { // If currently scanning or waiting for frame advance
         stopScanFlag = true;
     }
 
@@ -763,33 +1051,45 @@ void state_machine() {
     try
     { 
         switch(state) {
-            case preview:     //Runs full speed video
-                updateVideoFeed(); // Update the video feed
+            case preview:           //Runs video feed with guide markers
+                updateVideoFeed();
                 break;
-    
+
             case switchToSetup:
                 if (cam.capturePhoto(image4kin) == false) {
                     std::cerr << "Error: Failed to capture photo!" << std::endl;
                     return; // Skip if the image capture fails
                 }        
-    
                 state = setup; // Switch to setup state
-    
                 break;
     
             case setup:                 //Still images and sprocket calibration
                 updateSetupImage(); // Update the setup image
                 break;
-    
+
             case scanning:              //Scanning loop
                 if (stopScanFlag) {
                     stopScanFlag = false;       // Reset the stop scan flag
-                    switchToPreviewMode(); // Switch back to preview mode
+                    //stopVideoWriter();          // Stop the video writer if it's running
+                    switchToPreviewMode();      // Switch back to preview mode
                 }
                 else {
                     scanSingleFrame();          // Capture a single frame for scanning
+                    //updateVideoFeed();
                 }
     
+                break;
+
+            case frameAdvance:        //Wait for frame advance
+                if (stopScanFlag) {
+                    stopScanFlag = false;       // Reset the stop scan flag
+                    stopVideoWriter();          // Stop the video writer if it's running
+                    switchToPreviewMode();      // Switch back to preview mode
+                }
+                else {
+                    updateVideoFeedWaitForStill(); // Wait for the sprocket to be still before advancing
+                }
+
                 break;
     
         }
@@ -813,8 +1113,11 @@ void cameraSetup() {
     cam.options->video_width = 1920;
     cam.options->video_height = 1080;
     cam.options->framerate = 30;
-    cam.options->photo_width = 4056;
-    cam.options->photo_height = 3040;
+    cam.options->shutter = 5000.0f;           // 5 ms (reduce smearing)
+    cam.options->gain = 2.0f;                 // Increase gain to compensate for shorter exposure
+
+    cam.options->photo_width = frameSizeX;
+    cam.options->photo_height = frameSizeY;
     cam.options->denoise = "off";
 
 }
@@ -874,6 +1177,8 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
+    loadSettings("scan_settings.json"); // Load settings from the configuration file
+
     //If anything is mounted in /media, set saveFolder to that path:
     QDir dir("/media");
     if (dir.exists()) {
@@ -907,7 +1212,7 @@ int main(int argc, char *argv[]) {
 
     // Create a video display label
     videoLabel = new QLabel();
-    videoLabel->setFixedSize(frameSizeX / 4, frameSizeY / 4); // Set video frame display size
+    videoLabel->setFixedSize(previewWindowSizeX, previewWindowSizeY); // Set video frame display size
     videoLabel->setStyleSheet("background-color: black;"); // Black background for video
 
     videoAndSlidersLayout->addWidget(videoLabel, 0, Qt::AlignCenter); // Center the video label upper left
@@ -943,9 +1248,19 @@ int main(int argc, char *argv[]) {
     slidersGridLayout->addWidget(createLabel("Sprocket white threshold"), 4, 0); // Add a label for the left sprocket slider
     slidersGridLayout->addWidget(sprocketThresholdSliderWidget, 5, 0); // Add the slider to the grid layout
 
+    //Column 0 row 6-7:
+    QSlider *sprocketMinHeightSliderWidget = new QSlider(Qt::Horizontal);
+    sprocketMinHeightSliderWidget->setRange(300, 500); // Range for sprocket min height slider
+    sprocketMinHeightSliderWidget->setValue(sprocketMinHeight); // Set initial value
+    QObject::connect(sprocketMinHeightSliderWidget, &QSlider::valueChanged, [](int value) {
+        sprocketMinHeight = value; // Update the global variable when the text changes
+    });
+    slidersGridLayout->addWidget(createLabel("Sprocket min height"), 6, 0); // Add a label for the left sprocket slider
+    slidersGridLayout->addWidget(sprocketMinHeightSliderWidget, 7, 0); // Add the slider to the grid layout
+
     //Column 1 row 0-1:
     QSlider *cropWidthSliderWidget = new QSlider(Qt::Horizontal);
-    cropWidthSliderWidget->setRange(3000, 4055); // Range for crop width slider
+    cropWidthSliderWidget->setRange(2500, 3839); // Range for crop width slider
     cropWidthSliderWidget->setValue(scanCropWidthXMax); // Set initial value
     QObject::connect(cropWidthSliderWidget, &QSlider::valueChanged, [](int value) {
         scanCropWidthXMax = value; // Update the global variable when the text changes
@@ -956,7 +1271,7 @@ int main(int argc, char *argv[]) {
 
     //Column 1 row 2-3:
     QSlider *cropHeightSliderWidget = new QSlider(Qt::Horizontal);
-    cropHeightSliderWidget->setRange(1600, 2200); // Range for crop height slider
+    cropHeightSliderWidget->setRange(1400, 2159); // Range for crop height slider
     cropHeightSliderWidget->setValue(scanCropHeightYMax); // Set initial value
     QObject::connect(cropHeightSliderWidget, &QSlider::valueChanged, [](int value) {
         scanCropHeightYMax = value; // Update the global variable when the text changes
@@ -967,7 +1282,7 @@ int main(int argc, char *argv[]) {
 
     videoAndSlidersLayout->addLayout(slidersGridLayout); // Add the sliders grid layout to the video and sliders layout
 
-    mainLayout->addLayout(videoAndSlidersLayout);           //ADD TO LAYOUT
+    mainLayout->addLayout(videoAndSlidersLayout);           //ADD TO LAYOUT (starts left side)
 
     //Create film buttons:
     QPushButton *gotoPreviewModeButton = new QPushButton("Preview Mode");
@@ -983,21 +1298,21 @@ int main(int argc, char *argv[]) {
     QPushButton *advance50Button = new QPushButton("<< Frame +50");
     QPushButton *advance100Button = new QPushButton("<< Frame +100");
 
-    QLineEdit *skipFrameSlack = new QLineEdit();
-    skipFrameSlack->setPlaceholderText("50");
-    skipFrameSlack->setStyleSheet(
-        "color: black;"                // Text color
-        "background-color: white;"     // Background color
-        "selection-color: white;"      // Selected text color
-        "selection-background-color: blue;" // Background color for selected text
-        "border: 1px solid gray;"      // Border styling
-        "padding: 5px;"                // Padding for better spacing
-        "font-size: 14px;"             // Font size for readability
-        "caret-color: black;"          // Cursor (caret) color
-    );
-    skipFrameSlack->setValidator(new QIntValidator(0, 100)); // Allow only valid integer values (0 to 1000)
+    // QLineEdit *skipFrameSlack = new QLineEdit();
+    // skipFrameSlack->setPlaceholderText("50");
+    // skipFrameSlack->setStyleSheet(
+    //     "color: black;"                // Text color
+    //     "background-color: white;"     // Background color
+    //     "selection-color: white;"      // Selected text color
+    //     "selection-background-color: blue;" // Background color for selected text
+    //     "border: 1px solid gray;"      // Border styling
+    //     "padding: 5px;"                // Padding for better spacing
+    //     "font-size: 14px;"             // Font size for readability
+    //     "caret-color: black;"          // Cursor (caret) color
+    // );
+    // skipFrameSlack->setValidator(new QIntValidator(0, 100)); // Allow only valid integer values (0 to 1000)
 
-    QPushButton *skipFrameSetButton = new QPushButton("Set Frames Per Slack");
+    //QPushButton *skipFrameSetButton = new QPushButton("Set Frames Per Slack");
 
     QPushButton *startScanButton = new QPushButton("Start Scan");
     QPushButton *stopScanButton = new QPushButton("Stop Scan");
@@ -1052,9 +1367,9 @@ int main(int argc, char *argv[]) {
         advanceFilmTracking(100.0f, 3000.0f); // Move the film forward by one frame
     });
 
-    QObject::connect(skipFrameSetButton, &QPushButton::clicked, [skipFrameSlack]() {
-        setFrameSlackGap(skipFrameSlack);
-    });
+    // QObject::connect(skipFrameSetButton, &QPushButton::clicked, [skipFrameSlack]() {
+    //     setFrameSlackGap(skipFrameSlack);
+    // });
 
     QObject::connect(startScanButton, &QPushButton::clicked, onStartScanButtonClicked);
     QObject::connect(stopScanButton, &QPushButton::clicked, onStopScanButtonClicked);
@@ -1101,8 +1416,8 @@ int main(int argc, char *argv[]) {
     filmButtonsLayout->addWidget(advance10Button);
     filmButtonsLayout->addWidget(advance50Button);
     filmButtonsLayout->addWidget(advance100Button);
-    filmButtonsLayout->addWidget(skipFrameSlack);
-    filmButtonsLayout->addWidget(skipFrameSetButton);
+    //filmButtonsLayout->addWidget(skipFrameSlack);
+    //filmButtonsLayout->addWidget(skipFrameSetButton);
     filmButtonsLayout->addWidget(startScanButton);
     filmButtonsLayout->addWidget(stopScanButton);
     filmButtonsLayout->addWidget(filenameInput);
@@ -1227,4 +1542,5 @@ int main(int argc, char *argv[]) {
     cam.stopPhoto();
 
     return result;
+
 }
