@@ -1,0 +1,67 @@
+LCCV
+
+JSON thing
+
+
+
+sudo apt update
+sudo apt install libopencv-dev
+
+sudo apt update
+sudo apt install libcamera-dev
+
+sudo apt update
+sudo apt install libopencv-dev libcamera-dev qt5-default qtbase5-dev qtbase5-dev-tools
+
+
+sudo apt install qtbase5-dev qtbase5-dev-tools qtchooser libqt5widgets5 libqt5gui5 libqt5core5a
+
+sudo apt install libboost-system-dev libboost-filesystem-dev libboost-thread-dev libboost-regex-dev
+
+
+sudo apt update && sudo apt install -y \
+    build-essential cmake pkg-config dpkg-dev \
+    libopencv-dev libcamera-dev \
+    qtbase5-dev qtbase5-dev-tools qtchooser libqt5widgets5 libqt5gui5 libqt5core5a \
+    libboost-system-dev libboost-filesystem-dev libboost-thread-dev \
+    nlohmann-json3-dev
+
+
+
+
+All Dependencies
+1. Build tools
+build-essential cmake pkg-config dpkg-dev
+
+
+Compiler, make, CMake, and dpkg-architecture for Pi-specific flags.
+
+2. OpenCV (C++ development)
+libopencv-dev
+
+
+Provides headers, libraries, and OpenCVConfig.cmake.
+
+3. libcamera
+libcamera-dev
+
+
+Provides headers and pkg-config files for C++.
+
+4. Qt5 Widgets
+qtbase5-dev qtbase5-dev-tools qtchooser libqt5widgets5 libqt5gui5 libqt5core5a
+
+
+Development headers and build tools for Qt5 GUI.
+
+5. Boost (at least system, filesystem, thread)
+libboost-system-dev libboost-filesystem-dev libboost-thread-dev
+
+
+Provides headers and libraries for C++ Boost components.
+
+Optional: libboost-regex-dev or libboost-all-dev if your project uses more Boost libraries.
+
+6. nlohmann_json
+nlohmann-json3-dev
+

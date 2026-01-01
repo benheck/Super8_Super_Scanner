@@ -1482,7 +1482,7 @@ int main(int argc, char *argv[]) {
     QObject::connect(disableMotorsButton, &QPushButton::clicked, onDisableMotorsClicked);
 
     QObject::connect(rewindFilmButton, &QPushButton::clicked, []() {
-        marlin->sendGCode("G1 Y-99999 F18000"); // Send G-code command to rewind film
+        marlin->sendGCode("G1 Y-99999 F10000"); // Send G-code command to rewind film
     });
 
     QObject::connect(stopRewindFilmButton, &QPushButton::clicked, []() {
